@@ -8,7 +8,7 @@ def mutate_layer(layerIn):
     for i in range(layerOut.input_weights.shape[0]):
         for j in range(layerOut.input_weights.shape[1]):
             if random() < 0.1:
-                layerOut.input_weights[i,j] = random_bump(layerOut.input_weights[i,j], 0, 1, 0.01)
+                layerOut.input_weights[i,j] = random_bump(layerOut.input_weights[i,j], -1, 1, 0.1)
 
     return layerOut
 

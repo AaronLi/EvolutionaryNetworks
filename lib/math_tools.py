@@ -1,5 +1,5 @@
 import random
-
+import math
 
 def random_bump(val, minval, maxval, maxBump):
 
@@ -10,3 +10,9 @@ def random_bump(val, minval, maxval, maxBump):
 
 def clamp(val, minval, maxval):
     return min(max(val, minval), maxval)
+
+def sind(degrees):
+    return math.sin(math.radians(degrees))
+
+def cosd(degrees):
+    return math.cos(math.radians(degrees))

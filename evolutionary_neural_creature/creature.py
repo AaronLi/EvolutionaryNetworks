@@ -125,6 +125,7 @@ class Creature:
             self.is_reproducing = True
 
     def __sense_world(self, world: world_map.WorldMap):
+        self.vision = []
         for i in range(-1, 2):
             lookX = cosd(self.rotation + i*45)
             lookY = sind(self.rotation + i*45)

@@ -1,5 +1,4 @@
 import numpy as np
-import lib.neural_network.activation_function as af
 
 class Network:
     def __init__(self):

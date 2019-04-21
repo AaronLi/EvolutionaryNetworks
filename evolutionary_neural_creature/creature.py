@@ -2,7 +2,7 @@ from enum import Enum, auto
 
 from lib.neural_network import *
 from lib.game_world import world_map
-from lib.math_tools import sind, cosd, clamp
+from lib.math_tools import sind, cosd, clamp, random_bump
 import copy, random
 from lib.neural_network import network_mutator
 
@@ -30,6 +30,7 @@ class NetworkInputs(Enum):
     POSITION_IS_WATER = auto()
     POSITION_IS_NULL = auto()
     CAN_REPRODUCE = auto()
+    SIZE = auto()
 
 class NetworkOutputs:
     ROTATE = 0 # 2*(output - 0.5) gives how much of the max rotation speed to rotate left or right
@@ -60,6 +61,9 @@ class Creature:
         self.last_reproduction = 0
         self.generation = 0
         self.colour = (random.randint(0,255), random.randint(0,255), random.randint(0,255))
+        self.look_distance = 1.5
+        self.view_cone = 45
+        self.origin_creature = None
 
     def construct_network(self):
         networkOut = neural_net.Network()
@@ -69,8 +73,8 @@ class Creature:
 
             #layer.Layer(17).initialize_random_weights(),
             #layer.Layer(10).initialize_random_weights(),
-            #layer.Layer(15, activation_function=activation_function.relu).initialize_random_weights(),
             layer.Layer(10, activation_function=activation_function.relu).initialize_random_weights(),
+            layer.Layer(15, activation_function=activation_function.relu).initialize_random_weights(),
             layer.Layer(4, activation_function= activation_function.sigmoid).initialize_random_weights()
         ]
 
@@ -106,6 +110,7 @@ class Creature:
         input_vector[NetworkInputs.POSITION_IS_NULL.value] = self.position_tile.is_null
         input_vector[NetworkInputs.POSITION_IS_WATER.value] = self.position_tile.is_water
         input_vector[NetworkInputs.CAN_REPRODUCE.value] = self.can_reproduce
+        input_vector[NetworkInputs.SIZE.value] = self.size
 
         self.brain.write_inputs(input_vector)
 
@@ -127,8 +132,8 @@ class Creature:
     def __sense_world(self, world: world_map.WorldMap):
         self.vision = []
         for i in range(-1, 2):
-            lookX = cosd(self.rotation + i*45)
-            lookY = sind(self.rotation + i*45)
+            lookX = self.look_distance*cosd(self.rotation + i*self.view_cone)
+            lookY = self.look_distance*sind(self.rotation + i*self.view_cone)
 
             coordinateX = self.x+lookX
             coordinateY = self.y+lookY
@@ -142,7 +147,7 @@ class Creature:
         self.__interpret_network()
 
     def eat(self):
-        amount_eaten = min(self.size / 10, self.position_tile.current_food)
+        amount_eaten = min(self.size / 8, self.position_tile.current_food)
         gained_energy = amount_eaten * 500
         if self.position_tile.active and self.energy+gained_energy < self.max_energy:
             self.position_tile.current_food -= amount_eaten
@@ -157,7 +162,7 @@ class Creature:
         self.think(world)
         self.rotation= (self.rotation+self.rotation_speed)%360
         self.x = clamp(self.velocity * cosd(self.rotation) + self.x, self.radius, world.x_size - self.radius)
-        self.y = clamp(self.velocity * sind(self.rotation) + self.y, self.radius, world.y_size - self.radius-1)
+        self.y = clamp(self.velocity * sind(self.rotation) + self.y, self.radius, world.y_size - self.radius)
         self.energy -= self.energy_consumption
         self.age+=1
 
@@ -187,7 +192,14 @@ class Creature:
             new_creature.energy = 280
             new_creature.brain = network_mutator.mutate_network(self.brain)
             new_creature.generation+=1
-            new_creature.colour = (clamp(self.colour[0]+random.randint(-1,2), 0, 255), clamp(self.colour[1]+random.randint(-1,2),0, 255), clamp(self.colour[2]+random.randint(-1,2), 0, 255))
+            new_creature.colour = (clamp(self.colour[0]+random.randint(-1,1), 0, 255), clamp(self.colour[1]+random.randint(-1,1),0, 255), clamp(self.colour[2]+random.randint(-1,1), 0, 255))
+            new_creature.look_distance = random_bump(self.look_distance, 1, 5, 0.2)
+            new_creature.view_cone = random_bump(self.view_cone, 20, 90, 1)
+            new_creature.rotation = random.randint(0, 360)
+            if self.origin_creature is None:
+                new_creature.origin_creature = self # forms a linked list back to the initial parent
+            else:
+                new_creature.origin_creature = self.origin_creature
             return new_creature
         else:
             return None

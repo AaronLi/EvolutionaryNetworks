@@ -31,9 +31,11 @@ class WorldMap():
         self.game_map = [[game_tile.GameTile(self.value_map[i][j]) for j in range(self.x_size)] for i in range(self.y_size)]
 
     def update(self):
+        total_food = 0
         for i in range(self.y_size):
             for j in range(self.x_size):
                 self.game_map[i][j].update()
+                total_food+=self.game_map[i][j].current_food
 
         for i in range(len(self.creatures)-1, -1, -1):
 
@@ -41,6 +43,7 @@ class WorldMap():
                 self.creatures[i].update(self)
             else:
                 del self.creatures[i]
+        return total_food
 
     def get_tile(self, x, y):
         x,y = int(x), int(y)
@@ -59,7 +62,9 @@ class WorldMap():
         for i in self.creatures:
             cSize = i.radius
             draw.circle(sOut, i.colour, (int(i.x*scale), int(i.y*scale)), int(cSize * scale))
-            draw.line(sOut, (255-i.colour[0],255-i.colour[1],255-i.colour[2]), (int(i.x*scale), int(i.y*scale)), (int(i.x*scale) + cSize * math_tools.cosd(i.rotation) * scale, int(i.y*scale) + scale*cSize * math_tools.sind(i.rotation)))
+
+            for j in range(-1, 2):
+                draw.line(sOut, (255-i.colour[0],255-i.colour[1],255-i.colour[2]), (int(i.x*scale), int(i.y*scale)), (int(i.x*scale) + i.look_distance * math_tools.cosd(i.rotation + i.view_cone*j) * scale, int(i.y*scale) + i.look_distance*scale* math_tools.sind(i.rotation + i.view_cone*j)))
         return sOut
 
 if __name__ == "__main__":
